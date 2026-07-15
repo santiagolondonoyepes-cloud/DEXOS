@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  dexos-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: dexos-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Server=dexos-sqlserver,1433;Database=DEXOS;User Id=sa;Password=Your_strong_password123!;TrustServerCertificate=True;Encrypt=False;
+      Jwt__Issuer: DEXOS
+      Jwt__Audience: DEXOS.Clients
+      Jwt__Secret: DEXOS_DEV_CHANGE_THIS_SECRET_32_CHARS_MIN
+    ports:
+      - "5160:8080"
+    depends_on:
+      - dexos-sqlserver
+
+  dexos-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dexos-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_password123!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  sqlserver_data:

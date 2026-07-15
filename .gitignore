@@ -1,0 +1,46 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.pdb
+*.mdb
+
+# Rider/JetBrains
+.idea/
+*.DotSettings.user
+
+# VS Code
+.vscode/
+
+# Node/Frontend
+node_modules/
+dist/
+build/
+.npm/
+.pnpm-store/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / env
+.env
+.env.*
+appsettings.*.local.json
+secrets.json
+
+# Test outputs
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Docker temp
+*.tar

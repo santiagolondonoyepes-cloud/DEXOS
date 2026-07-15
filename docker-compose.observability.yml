@@ -1,0 +1,85 @@
+version: '3.9'
+
+services:
+  dexos-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dexos-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_password123!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Your_strong_password123!", "-C", "-Q", "SELECT 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+
+  dexos-db-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: dexos-db-init
+    depends_on:
+      dexos-sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./scripts/sql:/scripts:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        /opt/mssql-tools/bin/sqlcmd -S dexos-sqlserver -U sa -P 'Your_strong_password123!' -Q "SELECT 1";
+        /opt/mssql-tools/bin/sqlcmd -S dexos-sqlserver -U sa -P 'Your_strong_password123!' -i /scripts/init-db.sql;
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: dexos-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dexos-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: dexos-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    container_name: dexos-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: dexos-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./deploy/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+volumes:
+  sqlserver_data:
+  grafana_data:
